@@ -1,0 +1,27 @@
+# HRRP Pipeline — Python dependencies
+#
+# Pinned exactly so that a clone reproduces this environment. The venv is disposable; this file is the durable artifact. To rebuild from scratch:
+#
+#   python3.13 -m venv .venv
+#   source .venv/bin/activate
+#   python -m pip install -r requirements.txt
+
+# ---- Ingestion (Phase 1) ----
+requests==2.34.2
+pandas==2.3.3
+pyarrow==25.0.1
+
+# ---- Warehouse (Phase 2) ----
+# Reads Snowflake credentials from .env so they are never in the source tree.
+python-dotenv==1.2.3
+# The [pandas] extra provides write_pandas(), the DataFrame -> Snowflake loader.
+# That extra requires pandas<3.0.0, which is why pandas is held at 2.3.3 above
+# and not the current 3.0.5. Revisit when the connector supports pandas 3.
+snowflake-connector-python[pandas]==4.7.3
+
+# ---- Transformation (Phase 4) ----
+dbt-core==1.12.4
+dbt-snowflake==1.12.0
+
+# ---- Testing ----
+pytest==9.1.1
