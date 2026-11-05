@@ -1,0 +1,19 @@
+version: 2
+
+sources:
+  - name: raw
+    database: healthcare_analytics
+    schema: raw
+    description: >
+      Landing tables written by the Python ingestion layer. One table per CMS
+      dataset, named for the internal dataset key rather than the CMS title so
+      the name is stable across CMS file renames.
+    tables:
+      - name: hospitals
+        description: Hospital General Information — the dimension source.
+      - name: readmissions
+        description: Unplanned Hospital Visits — readmission and ED-visit measures.
+      - name: infections
+        description: Healthcare Associated Infections — standardised infection ratios.
+      - name: patient_experience
+        description: HCAHPS patient survey results.

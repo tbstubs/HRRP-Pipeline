@@ -1,0 +1,26 @@
+version: 2
+
+models:
+  - name: stg_hospitals
+    description: Hospital General Information, renamed and recast. No business logic.
+    columns:
+      - name: facility_id
+        data_tests: [unique, not_null]
+
+  - name: stg_readmissions
+    description: Unplanned Hospital Visits, renamed and recast.
+    columns:
+      - name: facility_id
+        data_tests: [not_null]
+
+  - name: stg_infections
+    description: Healthcare Associated Infections, renamed and recast.
+    columns:
+      - name: facility_id
+        data_tests: [not_null]
+
+  - name: stg_patient_experience
+    description: HCAHPS patient survey, renamed and recast.
+    columns:
+      - name: facility_id
+        data_tests: [not_null]
