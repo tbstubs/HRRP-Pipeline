@@ -1,0 +1,80 @@
+# =============================================================================
+# HRRP Pipeline — .gitignore
+#
+# This repo is intended to END UP PUBLIC, and it will hold real Snowflake
+# credentials in .env during development. Everything is excluded BEFORE the
+# first commit: `git rm` later removes the file but leaves every prior version
+# in the object store. One forgotten line is permanent.
+#
+# WHY DENY-BY-DEFAULT: `/*` ignores everything at the root, and the things that
+# belong in the repo are added back by name below. A new file at the root is
+# therefore ignored the moment it exists, with nothing to remember. Adding
+# something is the deliberate act; excluding it is the default.
+#
+# NOTE: `/*` is anchored to the root level only. It does not reach nested paths
+# like src/ingestion/__pycache__/, so those need their own rules further down.
+# =============================================================================
+
+# ---- Deny everything at the root -------------------------------------------
+/*
+
+# ---- Then allow back, explicitly -------------------------------------------
+!/.gitignore
+!/.env.example
+!/main.py
+!/README.md
+!/requirements.txt
+!/hrrp_pipeline_blueprint.md
+!/src/
+!/scripts/
+!/sql/
+!/tests/
+!/docs/
+!/dbt_project/
+
+# ---- Belt and braces: the sensitive ones, named ----------------------------
+# Redundant calls with `/*` above and kept deliberately. It makes the intent legible
+# to a human scanning this file, and it survives someone later "tidying up" the
+# `/*` line without understanding what it was doing.
+#
+#   .env                 live Snowflake credentials
+#   data/                ~169 MB of CMS CSVs. HCAHPS alone is 101 MB, over
+#                        GitHub's 100 MB hard limit. Freely re-downloadable.
+#   HRRP_BUILD_BRIEF.md  strategy document housing no design.
+#   ROADMAP.md           working build checklist, not a published document. A
+#                        list of unchecked boxes reads as incomplete work, and
+#                        once the build is done it is redundant with the code.
+#                        Forward-looking direction belongs in the README.
+
+.env
+*.pem
+*.p8
+credentials.json
+data/
+HRRP_BUILD_BRIEF.md
+ROADMAP.md
+.venv/
+venv/
+.claude/
+*.code-workspace
+.DS_Store
+
+# ---- Nested paths: NOT covered by `/*` -------------------------------------
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+target/
+dbt_packages/
+logs/
+
+# ---- Power BI --------------------------------------------------------------
+# The published dashboard file IS a deliverable — reviewers should be able to
+# download and open it. Under deny-by-default it needs an explicit allow when
+# it exists, e.g.:
+#     !/docs/hrrp_dashboard.pbix
+# Before committing one, check it: an Import-mode .pbix embeds the data and the
+# Snowflake account identifier.
+
+# dbt writes a per-user anonymous id here.
+.user.yml
