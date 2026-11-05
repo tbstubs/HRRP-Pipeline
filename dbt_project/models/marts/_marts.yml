@@ -1,0 +1,155 @@
+version: 2
+
+models:
+
+  - name: dim_hospitals
+    description: >
+      Conformed hospital dimension. One row per CMS Certification Number.
+      Contains 5,419 hospitals, of which 4,790 report measures — the gap is
+      real, so every relationships test runs fact to dimension, never the
+      reverse.
+    columns:
+      - name: facility_id
+        description: CMS Certification Number (CCN). Six characters, string — leading zeros are significant.
+        data_tests:
+          - unique
+          - not_null
+      - name: state
+        description: Two-letter US state or territory code.
+        data_tests:
+          - not_null
+      - name: hospital_ownership
+        description: Ownership category as published by CMS.
+        data_tests:
+          - not_null
+      - name: overall_rating
+        description: CMS overall star rating, 1-5. Null where CMS suppressed it.
+
+  - name: dim_measures
+    description: >
+      Conformed measure dimension, built from the distinct measures across all
+      three measure domains. Supplies the clinical-condition slicing axis.
+    columns:
+      - name: measure_id
+        description: CMS measure identifier, uppercased and trimmed by the ingestion layer.
+        data_tests:
+          - unique
+          - not_null
+      - name: measure_domain
+        description: Which CMS dataset the measure came from.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["Readmissions", "Infections", "Patient Experience"]
+      - name: clinical_condition
+        description: Condition derived from the CMS measure-ID convention.
+        data_tests:
+          - not_null
+
+  - name: fct_readmissions
+    description: "Grain: one row per hospital per readmission or ED-visit measure."
+    columns:
+      - name: facility_id
+        description: Foreign key to dim_hospitals.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_hospitals')
+                field: facility_id
+      - name: measure_id
+        description: Foreign key to dim_measures.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_measures')
+                field: measure_id
+      - name: readmission_rate
+        description: 30-day rate as a percentage. Null where CMS suppressed the value.
+      - name: national_comparison
+        description: CMS comparison of this hospital to the national rate.
+
+  - name: fct_infections
+    description: "Grain: one row per hospital per healthcare-associated-infection measure."
+    columns:
+      - name: facility_id
+        description: Foreign key to dim_hospitals.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_hospitals')
+                field: facility_id
+      - name: measure_id
+        description: Foreign key to dim_measures.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_measures')
+                field: measure_id
+      - name: infection_ratio
+        description: Standardized Infection Ratio. 1.0 is the national benchmark.
+
+  - name: fct_patient_experience
+    description: "Grain: one row per hospital per HCAHPS survey measure."
+    columns:
+      - name: facility_id
+        description: Foreign key to dim_hospitals.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_hospitals')
+                field: facility_id
+      - name: measure_id
+        description: Foreign key to dim_measures.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_measures')
+                field: measure_id
+      - name: star_rating
+        description: Patient survey star rating, 1-5. Null where suppressed.
+
+  - name: fct_hospital_quality
+    description: >
+      Aggregate fact at hospital grain, rolling up all three measure domains.
+      Carries benchmark_tier, the penalty-risk classification the dashboard
+      slices on. CMS's own published rollups are included for reconciliation
+      only and are not used to compute the tier.
+    columns:
+      - name: facility_id
+        description: Primary key, and a foreign key to dim_hospitals.
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_hospitals')
+                field: facility_id
+      - name: benchmark_tier
+        description: >
+          Quartile of the hospital's mean readmission rate among all rated
+          hospitals. A rank, and nothing more: CMS publishes no comparison
+          column and no confidence interval for these measures, so no
+          significance claim or penalty prediction is supportable.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - "Best Quartile"
+                  - "Second Quartile"
+                  - "Third Quartile"
+                  - "Worst Quartile"
+                  - "Not Rated"
+      - name: avg_readmission_rate
+        description: Mean of the hospital's reported readmission rates.
+      - name: avg_infection_ratio
+        description: Mean Standardized Infection Ratio across reported infection measures.
+      - name: avg_star_rating
+        description: Mean HCAHPS star rating across reported survey measures.
